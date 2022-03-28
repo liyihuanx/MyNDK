@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import java.util.ArrayList;
+
 public class SecondActivity extends AppCompatActivity {
 
 	private static final String TAG = "JNI_LOG";
@@ -27,6 +29,23 @@ public class SecondActivity extends AppCompatActivity {
 			String result = postString("name123");
 			Log.d(TAG, "onCreate: " + result);
 		});
+
+		findViewById(R.id.btnTest3).setOnClickListener((view) -> {
+			int[] arr = {1,2,3,4};
+
+			String[] str = {"你一换","你二换","七七八八","五五六六"};
+
+			ArrayList<String> arrayList = new ArrayList<String>();
+			arrayList.add("String111");
+			arrayList.add("hhhha");
+			arrayList.add("cccccc");
+			arrayList.get(0);
+			UserBean userBean = new UserBean();
+			userBean.setId(99);
+			userBean.setUsername("zxcv");
+			Object result = postDiffData(arr, str, arrayList, userBean);
+			Log.d(TAG, "postDiffData: " + result);
+		});
 	}
 
 
@@ -40,6 +59,8 @@ public class SecondActivity extends AppCompatActivity {
 	 */
 	public native String postString(String name);
 
+
+	public native UserBean postDiffData(int[] intArr, String[] str, ArrayList<String> arrayList, UserBean userBean);
 
 
 

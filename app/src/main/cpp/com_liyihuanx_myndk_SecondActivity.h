@@ -36,3 +36,12 @@ JNIEXPORT void JNICALL Java_com_liyihuanx_myndk_SecondActivity_HelloJNI
 extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_liyihuanx_myndk_SecondActivity_postString(JNIEnv *env, jobject thiz, jstring name);
+
+
+
+
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_com_liyihuanx_myndk_SecondActivity_postDiffData(JNIEnv *env, jobject thiz, jintArray int_arr,
+                                                     jobjectArray str, jobject array_list,
+                                                     jobject user_bean);
