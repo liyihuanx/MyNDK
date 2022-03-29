@@ -1,5 +1,7 @@
 package com.liyihuanx.myndk;
 
+import android.util.Log;
+
 /**
  * @author liyihuan
  * @date 2022/03/25
@@ -9,6 +11,11 @@ public class UserBean {
 
 	private String username;
 	private int id;
+
+	public UserBean(){
+		Log.d("JNI_LOG", "UserBean 初始化");
+
+	}
 
 	public String getUsername() {
 		return username == null ? "" : username;

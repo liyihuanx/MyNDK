@@ -46,6 +46,14 @@ public class SecondActivity extends AppCompatActivity {
 			Object result = postDiffData(arr, str, arrayList, userBean);
 			Log.d(TAG, "postDiffData: " + result);
 		});
+
+		findViewById(R.id.btnTest4).setOnClickListener((view) -> {
+			testQuote();
+		});
+
+		findViewById(R.id.btnTest5).setOnClickListener((view) -> {
+			Log.d(TAG, "dynamicRegister: " + dynamicRegister("动态注册"));
+		});
 	}
 
 
@@ -59,9 +67,24 @@ public class SecondActivity extends AppCompatActivity {
 	 */
 	public native String postString(String name);
 
-
+	/**
+	 * 对数组，列表，对象的操作
+	 * @param intArr
+	 * @param str
+	 * @param arrayList
+	 * @param userBean
+	 * @return
+	 */
 	public native UserBean postDiffData(int[] intArr, String[] str, ArrayList<String> arrayList, UserBean userBean);
 
 
+	public native UserBean createStu();
 
+	/**
+	 *  局部引用
+	 */
+	public native void testQuote();
+
+
+	public native String dynamicRegister(String tag);
 }

@@ -13,6 +13,8 @@ project("myndk")
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
+# 批量导入
+file(GLOB AllCPP *.c *.h *.cpp)
 
 add_library( # Sets the name of the library.
         myndk
@@ -21,7 +23,7 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        native-lib.cpp)
+        ${AllCPP})
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by

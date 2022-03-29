@@ -45,3 +45,11 @@ JNIEXPORT jobject JNICALL
 Java_com_liyihuanx_myndk_SecondActivity_postDiffData(JNIEnv *env, jobject thiz, jintArray int_arr,
                                                      jobjectArray str, jobject array_list,
                                                      jobject user_bean);
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_com_liyihuanx_myndk_SecondActivity_createStu(JNIEnv *env, jobject thiz);
+
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_liyihuanx_myndk_SecondActivity_testQuote(JNIEnv *env, jobject thiz);

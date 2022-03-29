@@ -26,4 +26,17 @@
         android:layout_height="50dp"
         android:text="btnTest3" />
 
+
+    <Button
+        android:id="@+id/btnTest4"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="btnTest4" />
+
+
+    <Button
+        android:id="@+id/btnTest5"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="btnTest5" />
 </LinearLayout>

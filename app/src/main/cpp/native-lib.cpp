@@ -117,3 +117,91 @@ Java_com_liyihuanx_myndk_SecondActivity_postDiffData(JNIEnv *env, jobject thiz, 
     return user_bean;
 
 }
+
+
+extern "C"
+JNIEXPORT jobject JNICALL
+Java_com_liyihuanx_myndk_SecondActivity_createStu(JNIEnv *env, jobject thiz) {
+    // 1.包名+类型 找到class
+    const char * userBeanPath = "com/liyihuanx/myndk/UserBean";
+    jclass userClazz = env->FindClass(userBeanPath);
+    // 2.实例化对象，不调用构造函数
+    jobject userBean = env->AllocObject(userClazz);
+
+
+    // 实例化对象，调用构造函数
+    jmethodID construct = env->GetMethodID(userClazz,"<init>", "()V");
+    jobject userBean2 = env->NewObject(userClazz, construct);
+
+    env->DeleteLocalRef(userBean2);
+}
+
+
+
+// 还是局部引用
+jclass userCla = NULL;
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_liyihuanx_myndk_SecondActivity_testQuote(JNIEnv *env, jobject thiz) {
+    // 第二次进入，不等于NULL
+    if (NULL == userCla) {
+        const char * userBeanPath = "com/liyihuanx/myndk/UserBean";
+        userCla = env->FindClass(userBeanPath);
+        // 提升为全局引用  -- 要手动释放
+        // env->NewGlobalRef(jclass);
+    }
+    // 第二次拿不到值会崩溃
+    jmethodID construct = env->GetMethodID(userCla,"<init>", "()V");
+    jobject userBean2 = env->NewObject(userCla, construct);
+
+    // 第一次执行，释放后但是不会为NULL，成为悬空指针
+    env->DeleteLocalRef(userBean2);
+    // 这只是规范，但是不会解决崩溃
+    userBean2 = NULL;
+}
+
+
+// ============ 动态注册 ============
+JavaVM * javavm = nullptr;
+
+//
+jstring dynamicRegister(JNIEnv *env, jobject thiz, jstring tag){
+    char *nameTemp = const_cast<char *>(env->GetStringUTFChars(tag, nullptr));
+    LOGD("nameTemp: %s", nameTemp);
+    jstring result = env->NewStringUTF(nameTemp);
+    env->ReleaseStringUTFChars(tag, nameTemp);
+    return result;
+}
+
+
+static const JNINativeMethod gMethods[] = {
+        {"dynamicRegister", "(Ljava/lang/String;)Ljava/lang/String;", (jstring *) dynamicRegister}
+};
+
+const char* secondActivityClass = "com/liyihuanx/myndk/SecondActivity";
+
+JNIEXPORT jint JNI_OnLoad(JavaVM *javavm, void *) {
+
+    ::javavm = javavm;
+
+    JNIEnv *jniEnv = nullptr;
+    int result = javavm->GetEnv(reinterpret_cast<void **>(&jniEnv), JNI_VERSION_1_6);
+
+    if (result != JNI_OK) {
+        return -1;
+    }
+//    jclass clazz, const JNINativeMethod* methods,jint nMethods
+
+//    typedef struct {
+//        const char* name;        // java层方法名
+//        const char* signature;   // 签名
+//        void*       fnPtr;       // 函数指针
+//    } JNINativeMethod;
+
+    jclass clazz = jniEnv->FindClass(secondActivityClass);
+
+    jniEnv->RegisterNatives(clazz, gMethods, sizeof(gMethods) / sizeof(JNINativeMethod));
+
+    LOGD("JNI_ONLOAD");
+    return JNI_VERSION_1_6;
+}
