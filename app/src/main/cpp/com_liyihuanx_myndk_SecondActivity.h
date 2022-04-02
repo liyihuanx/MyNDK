@@ -53,3 +53,6 @@ Java_com_liyihuanx_myndk_SecondActivity_createStu(JNIEnv *env, jobject thiz);
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_liyihuanx_myndk_SecondActivity_testQuote(JNIEnv *env, jobject thiz);
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_liyihuanx_myndk_SecondActivity_testNdk(JNIEnv *env, jobject thiz);

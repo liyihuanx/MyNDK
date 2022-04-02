@@ -54,6 +54,11 @@ public class SecondActivity extends AppCompatActivity {
 		findViewById(R.id.btnTest5).setOnClickListener((view) -> {
 			Log.d(TAG, "dynamicRegister: " + dynamicRegister("动态注册"));
 		});
+
+
+		findViewById(R.id.btnTest6).setOnClickListener((view) -> {
+			testNdk();
+		});
 	}
 
 
@@ -87,4 +92,6 @@ public class SecondActivity extends AppCompatActivity {
 
 
 	public native String dynamicRegister(String tag);
+
+	public native void testNdk();
 }

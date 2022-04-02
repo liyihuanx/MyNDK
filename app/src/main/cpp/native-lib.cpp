@@ -205,3 +205,13 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *javavm, void *) {
     LOGD("JNI_ONLOAD");
     return JNI_VERSION_1_6;
 }
+
+extern "C"{
+    extern int get();
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_liyihuanx_myndk_SecondActivity_testNdk(JNIEnv *env, jobject thiz) {
+    LOGD("交叉编译的库： %d" ,get());
+}

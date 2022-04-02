@@ -20,13 +20,4 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
     }
-
-
-
-    companion object {
-        // Used to load the 'myndk' library on application startup.
-        init {
-            System.loadLibrary("myndk")
-        }
-    }
 }
