@@ -25,19 +25,23 @@ find_library(
 #set_target_properties(getndk PROPERTIES
 #        IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/jniLibaa/${CMAKE_ANDROID_ARCH_ABI}/libgetndk.so)
 
-# 第一步：导入fmod头文件
-#include_directories("${CMAKE_SOURCE_DIR}/cpp/inc")
+# 第一步：导入头文件
+include_directories("${CMAKE_SOURCE_DIR}/../../libs/${CMAKE_ANDROID_ARCH_ABI}/include")
 # 第二步：导入库文件 （方式一）
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_SOURCE_DIR}/../../libs/${CMAKE_ANDROID_ARCH_ABI}")
 
 message(WARNING "CMAKE_SOURCE_DIR = ${CMAKE_SOURCE_DIR}") # C:/Users/admin/Desktop/MyFFmpeg/app/src/main
 message(WARNING "PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}") # C:/Users/admin/Desktop/MyFFmpeg/app/src/main
 message(WARNING "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}") # C:/Users/admin/Desktop/MyFFmpeg/app/src/main
-message(WARNING "path = ${CMAKE_SOURCE_DIR}/jniLibaa/${CMAKE_ANDROID_ARCH_ABI}")
+message(WARNING "path = ${CMAKE_CXX_FLAGS} -L${CMAKE_SOURCE_DIR}/../../libs/${CMAKE_ANDROID_ARCH_ABI}/lib")
 
 
 target_link_libraries(
         myndk
         ${log-lib}
         getndk
+        # 忽略顺序的方式，导入
+        -Wl,--start-group
+        avformat avcodec avfilter avutil swresample swscale
+        -Wl,--end-group
 )

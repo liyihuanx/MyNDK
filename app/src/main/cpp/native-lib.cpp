@@ -210,8 +210,13 @@ extern "C"{
     extern int get();
 }
 
+extern "C" {
+    #include <libavutil/avutil.h>
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_liyihuanx_myndk_SecondActivity_testNdk(JNIEnv *env, jobject thiz) {
     LOGD("交叉编译的库： %d" ,get());
+    LOGD("ffmpeg-version： %s" ,av_version_info());
 }
