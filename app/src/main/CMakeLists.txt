@@ -28,7 +28,12 @@ find_library(
 # 第一步：导入fmod头文件
 #include_directories("${CMAKE_SOURCE_DIR}/cpp/inc")
 # 第二步：导入库文件 （方式一）
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_SOURCE_DIR}/jniLibaa/${CMAKE_ANDROID_ARCH_ABI}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_SOURCE_DIR}/../../libs/${CMAKE_ANDROID_ARCH_ABI}")
+
+message(WARNING "CMAKE_SOURCE_DIR = ${CMAKE_SOURCE_DIR}") # C:/Users/admin/Desktop/MyFFmpeg/app/src/main
+message(WARNING "PROJECT_SOURCE_DIR = ${PROJECT_SOURCE_DIR}") # C:/Users/admin/Desktop/MyFFmpeg/app/src/main
+message(WARNING "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}") # C:/Users/admin/Desktop/MyFFmpeg/app/src/main
+message(WARNING "path = ${CMAKE_SOURCE_DIR}/jniLibaa/${CMAKE_ANDROID_ARCH_ABI}")
 
 
 target_link_libraries(
