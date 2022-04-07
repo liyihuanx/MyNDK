@@ -44,4 +44,8 @@ target_link_libraries(
         -Wl,--start-group
         avformat avcodec avfilter avutil swresample swscale
         -Wl,--end-group
+
+        z # libz.so库，是FFmpeg需要用ndk的z库，FFMpeg需要额外支持  libz.so
+        android # android 后面会专门介绍，目前先要明白的是 ANativeWindow 用来渲染画面的
+        OpenSLES # OpenSLES 后面会专门介绍，目前先要明白的是 OpenSLES 用来播放声音的
 )
