@@ -27,20 +27,25 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        val path = File("${Environment.getExternalStorageDirectory()}${File.separator}demo.mp4").absolutePath
+        val path =
+            File("${Environment.getExternalStorageDirectory()}${File.separator}demo.mp4").absolutePath
         Log.d("QWER", "path $path")
 
-        simplePlayer.setDataSource(
-            dataSource
-        )
+        simplePlayer.setDataSource(dataSource)
 
-
-        simplePlayer.setPlayerListener {
-            runOnUiThread {
-                Toast.makeText(this@MainActivity, "准备成功，即将开始播放", Toast.LENGTH_LONG).show()
+        simplePlayer.setPlayerListener(object : PlayerListener {
+            override fun onPrepared() {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "准备成功，即将开始播放", Toast.LENGTH_LONG).show()
+                }
+                simplePlayer.start() // 调用 C++ 开始播放
             }
-            simplePlayer.start() // 调用 C++ 开始播放
-        }
+
+            override fun onError(msg: String) {
+                Toast.makeText(this@MainActivity, "出错了: $msg", Toast.LENGTH_LONG).show()
+            }
+
+        })
     }
 
     override fun onResume() {

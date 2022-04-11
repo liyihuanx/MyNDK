@@ -4,13 +4,19 @@
 
 #ifndef MYNDK_AUDIOCHANNEL_H
 #define MYNDK_AUDIOCHANNEL_H
+#include "BaseChannel.h"
 
-
-class AudioChannel {
+class AudioChannel : public BaseChannel {
 
 public:
-    AudioChannel();
+    AudioChannel(int stream_index, AVCodecContext *codecContext);
+
+    virtual ~AudioChannel();
+
+    void stop();
 };
+
+
 
 
 #endif //MYNDK_AUDIOCHANNEL_H

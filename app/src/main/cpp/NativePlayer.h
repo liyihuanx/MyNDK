@@ -23,12 +23,17 @@ class NativePlayer {
 private:
     char *data_source = 0;
     pthread_t pid_prepare;
+    pthread_t pid_start;
+
     // 上下文
     AVFormatContext *formatContext = 0;
     // 音频，视频
     AudioChannel *audio_channel = 0;
     VideoChannel *video_channel = 0;
     JNICallbackHelper *helper = 0;
+    // nativePlayer 使用的
+    bool isPlaying = false;
+
 public:
     NativePlayer(const char *data_source, JNICallbackHelper *pHelper);
     ~NativePlayer();
@@ -36,6 +41,8 @@ public:
     void prepare();
     void prepare_();
 
+    void start();
+    void start_();
 
 };
 

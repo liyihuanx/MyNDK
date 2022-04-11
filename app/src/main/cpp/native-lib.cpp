@@ -38,7 +38,9 @@ Java_com_liyihuanx_myndk_SimplePlayer_nativePrepare(JNIEnv *env, jobject thiz,
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_liyihuanx_myndk_SimplePlayer_nativeStart(JNIEnv *env, jobject thiz) {
-
+    if (nativePlayer) {
+        nativePlayer->start();
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL

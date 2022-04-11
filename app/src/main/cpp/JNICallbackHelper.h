@@ -16,15 +16,14 @@ private:
     JNIEnv *env = 0;
     jobject job;
     jmethodID jmd_prepared;
-
+    jmethodID jmd_error;
 public:
     JNICallbackHelper(JavaVM *vm, JNIEnv *env, jobject job);
 
     virtual ~JNICallbackHelper();
 
-
     void prepareCallBack(int thread_mode);
-
+    void errorCallBack(int thread_mode, int error_code);
 };
 
 

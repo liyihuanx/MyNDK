@@ -9,5 +9,6 @@ public interface PlayerListener {
 
 	void onPrepared();
 
+	void onError(String msg);
 
 }

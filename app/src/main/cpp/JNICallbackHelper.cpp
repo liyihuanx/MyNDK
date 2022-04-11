@@ -9,13 +9,14 @@ JNICallbackHelper::JNICallbackHelper(JavaVM *vm, JNIEnv *env, jobject job) {
     this->vm = vm;
     this->env = env;
 
-    // 坑： jobject不能跨越线程，不能跨越函数，必须全局引用
+    // 注意： jobject不能跨越线程，不能跨越函数，必须全局引用
     // this->job = job;
 
     this->job = env->NewGlobalRef(job); // 提示全局引用
 
     jclass clazz = env->GetObjectClass(job);
     jmd_prepared = env->GetMethodID(clazz, "onPrepared", "()V");
+    jmd_error = env->GetMethodID(clazz, "onError", "(I)V");
 }
 
 JNICallbackHelper::~JNICallbackHelper() {
@@ -37,6 +38,21 @@ void JNICallbackHelper::prepareCallBack(int thread_mode) {
         env_child->CallVoidMethod(job, jmd_prepared);
         vm->DetachCurrentThread();
     }
+}
+
+void JNICallbackHelper::errorCallBack(int thread_mode, int error_code) {
+
+    if (thread_mode == THREAD_MAIN) {
+        // 主线程
+        env->CallVoidMethod(job, jmd_error, error_code);
+    } else if (thread_mode == THREAD_CHILD) {
+        // 子线程 env也不可以跨线程
+        JNIEnv *env_child;
+        vm->AttachCurrentThread(&env_child, nullptr);
+        env_child->CallVoidMethod(job, jmd_error, error_code);
+        vm->DetachCurrentThread();
+    }
+
 }
 
 
