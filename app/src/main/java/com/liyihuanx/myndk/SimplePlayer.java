@@ -1,14 +1,18 @@
 package com.liyihuanx.myndk;
 
 
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 
+import androidx.annotation.NonNull;
 
 /**
  * @author liyihuan
  * @date 2022/04/07
  * @Description
  */
-public class SimplePlayer {
+public class SimplePlayer implements SurfaceHolder.Callback {
 
 	static {
 		System.loadLibrary("myndk");
@@ -16,6 +20,8 @@ public class SimplePlayer {
 
 	// 播放地址
 	private String dataSource;
+
+	private SurfaceHolder surfaceHolder;
 
 
 	public void setDataSource(String dataSource){
@@ -95,6 +101,32 @@ public class SimplePlayer {
 	}
 
 
+
+
+	public void setSurfaceView(SurfaceView surfaceView) {
+		if (this.surfaceHolder != null) {
+			surfaceHolder.removeCallback(this); // 清除上一次的
+		}
+		surfaceHolder = surfaceView.getHolder();
+		surfaceHolder.addCallback(this); // 监听
+	}
+
+
+	@Override
+	public void surfaceCreated(@NonNull SurfaceHolder surfaceHolder) {
+
+	}
+
+	@Override
+	public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+		setSurfaceNative(surfaceHolder.getSurface());
+	}
+
+	@Override
+	public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
+
+	}
+
 	/**
 	 * native层方法
 	 */
@@ -103,5 +135,7 @@ public class SimplePlayer {
 	public native void nativeStop();
 	public native void nativePause();
 	public native void nativeResume();
+	private native void setSurfaceNative(Surface surface);
+
 
 }

@@ -137,6 +137,7 @@ void NativePlayer::prepare_() {
             audio_channel = new AudioChannel(i, codecContext);
         } else if (parameters->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO) { // 视频
             video_channel = new VideoChannel(i, codecContext);
+            video_channel->setRenderCallback(renderCallback);
         }
 
     } // for end
@@ -214,6 +215,11 @@ void NativePlayer::start() {
     // TODO 把压缩的 音/视频包 放到阻塞队列中去
     pthread_create(&pid_start, nullptr, task_start, this);
 }
+
+void NativePlayer::setRenderCallback(RenderCallback renderCallback) {
+    this->renderCallback = renderCallback;
+}
+
 
 
 

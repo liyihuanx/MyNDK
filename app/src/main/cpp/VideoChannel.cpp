@@ -48,7 +48,7 @@ void VideoChannel::video_decode() {
         // 从压缩数据包取出一个
         int ret = packets.getQueueAndDel(pkt);
         // 取出来后，发现没播放了
-        if (isPlaying) {
+        if (!isPlaying) {
             break;
         }
         // 取失败了，还是得继续取下一个
@@ -61,6 +61,7 @@ void VideoChannel::video_decode() {
         ret = avcodec_send_packet(codecContext, pkt);
         // 已经在缓冲区存在一份了，可以释放掉
         releaseAVPacket(&pkt);
+
         if (ret) {
             break;
         }
@@ -85,10 +86,59 @@ void VideoChannel::video_decode() {
     releaseAVPacket(&pkt);
 }
 
+
 void VideoChannel::video_play() {
     // 取出原始包做渲染工作
+    AVFrame *frame = nullptr;
+    uint8_t *dst_data[4]; // RGBA_8888 = 4bit
+    int dst_line_size[4]; // 每一行的
 
+    // 奖原始包（YUV数据）--> [libswscale] --> Android屏幕（RGBA数据）
 
+    // 1.开辟内存 --> 大小 = width * height * 4bit
+    av_image_alloc(dst_data, dst_line_size,
+                   codecContext->width, codecContext->height,
+                   AV_PIX_FMT_RGBA, 1);
+
+    // 2.转换数据,先创建上下文
+    SwsContext *sws_context = sws_getContext(
+            codecContext->width, codecContext->height,
+            codecContext->pix_fmt, // 自动获取 xxx.mp4 的像素格式  AV_PIX_FMT_YUV420P
+
+            codecContext->width, codecContext->height, AV_PIX_FMT_RGBA,
+            SWS_BILINEAR, NULL, NULL, NULL
+    );
+
+    while (isPlaying) {
+        // 取出一个原始数据包
+        int ret = frames.getQueueAndDel(frame);
+        if (!isPlaying) {
+            break; // 如果关闭了播放，跳出循环，释放资源
+        }
+        if (!ret) {
+            continue;
+        }
+
+        sws_scale(sws_context, frame->data, frame->linesize,
+                  0, codecContext->height,
+                  dst_data,
+                  dst_line_size);
+
+        // native: ANativeWindows 做渲染工作
+        // 上层: SurfaceView 做显示工作
+        // 这里拿不到SurfaceView，所以回调出去
+        renderCallback(dst_data[0], codecContext->width, codecContext->height, dst_line_size[0]);
+        releaseAVFrame(&frame);
+    }
+
+    releaseAVFrame(&frame); // 出现错误，所退出的循环，都要释放frame
+    isPlaying = false;
+    av_free(&dst_data[0]);
+    sws_freeContext(sws_context); // free(sws_ctx);
+}
+
+void VideoChannel::setRenderCallback(RenderCallback renderCallback) {
+    this->renderCallback = renderCallback;
 }
 
 

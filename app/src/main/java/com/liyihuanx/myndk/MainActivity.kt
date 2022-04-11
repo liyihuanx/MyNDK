@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
             File("${Environment.getExternalStorageDirectory()}${File.separator}demo.mp4").absolutePath
         Log.d("QWER", "path $path")
 
+        simplePlayer.setSurfaceView(binding.sampleSv);
         simplePlayer.setDataSource(dataSource)
 
         simplePlayer.setPlayerListener(object : PlayerListener {

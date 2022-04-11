@@ -33,7 +33,7 @@ private:
     JNICallbackHelper *helper = 0;
     // nativePlayer 使用的
     bool isPlaying = false;
-
+    RenderCallback renderCallback;
 public:
     NativePlayer(const char *data_source, JNICallbackHelper *pHelper);
     ~NativePlayer();
@@ -44,6 +44,7 @@ public:
     void start();
     void start_();
 
+    void setRenderCallback(RenderCallback renderCallback);
 };
 
 
