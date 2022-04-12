@@ -7,6 +7,7 @@ extern "C" {
 };
 
 #include "safe_queue.h"
+#include "log4c.h" // 日志
 
 class BaseChannel {
 

@@ -27,13 +27,14 @@ void renderFrame(uint8_t *src_data, int width, int height, int src_lineSize) {
     pthread_mutex_lock(&mutex);
     if (!window) {
         pthread_mutex_unlock(&mutex); // 出现了问题后，必须考虑到，释放锁，怕出现死锁问题
+        return;
     }
 
     // 设置窗口的大小，各个属性
     ANativeWindow_setBuffersGeometry(window, width, height, WINDOW_FORMAT_RGBA_8888);
 
     // 他自己有个缓冲区 buffer
-    ANativeWindow_Buffer window_buffer; // 目前他是指针吗？
+    ANativeWindow_Buffer window_buffer;
 
     // 如果我在渲染的时候，是被锁住的，那我就无法渲染，我需要释放 ，防止出现死锁
     if (ANativeWindow_lock(window, &window_buffer, 0)) {

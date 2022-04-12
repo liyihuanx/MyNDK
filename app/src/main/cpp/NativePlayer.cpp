@@ -182,7 +182,7 @@ void NativePlayer::start_() {
                 video_channel->packets.insertToQueue(packet);
             } else if (audio_channel && audio_channel->stream_index == packet->stream_index) {
                 // 代表是音频
-                // audio_channel->packets.insertToQueue(packet);
+                 audio_channel->packets.insertToQueue(packet);
             }
         } else if (ret == AVERROR_EOF) {
             // 读到文件末尾
@@ -208,9 +208,9 @@ void NativePlayer::start() {
         video_channel->start();
     }
 
-//    if (audio_channel) {
-//        audio_channel->start();
-//    }
+    if (audio_channel) {
+        audio_channel->start();
+    }
 
     // TODO 把压缩的 音/视频包 放到阻塞队列中去
     pthread_create(&pid_start, nullptr, task_start, this);

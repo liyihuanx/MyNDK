@@ -1,6 +1,7 @@
 package com.liyihuanx.myndk;
 
 
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -119,6 +120,7 @@ public class SimplePlayer implements SurfaceHolder.Callback {
 
 	@Override
 	public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+		Log.d("JNI_LOG", "surfaceChanged: ");
 		setSurfaceNative(surfaceHolder.getSurface());
 	}
 

@@ -43,9 +43,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onError(msg: String) {
-                Toast.makeText(this@MainActivity, "出错了: $msg", Toast.LENGTH_LONG).show()
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "出错了: $msg", Toast.LENGTH_LONG).show()
+                }
             }
-
         })
     }
 

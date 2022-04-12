@@ -79,7 +79,6 @@ void VideoChannel::video_decode() {
         }
         // 数据原始包插入队列
         frames.insertToQueue(frame);
-
     } // while end
 
     // 在break后
@@ -119,6 +118,7 @@ void VideoChannel::video_play() {
             continue;
         }
 
+        // 格式转换
         sws_scale(sws_context, frame->data, frame->linesize,
                   0, codecContext->height,
                   dst_data,
