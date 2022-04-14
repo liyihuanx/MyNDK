@@ -132,11 +132,23 @@ void NativePlayer::prepare_() {
             return;
         }
 
+        // 从流中获取时间基
+        AVRational time_base = stream->time_base;
+
         // TODO 第十步：从编解码器参数中，获取流的类型 codec_type  ===  音频/视频
         if (parameters->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO) { // 音频
-            audio_channel = new AudioChannel(i, codecContext);
+            audio_channel = new AudioChannel(i, codecContext, time_base);
         } else if (parameters->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO) { // 视频
-            video_channel = new VideoChannel(i, codecContext);
+
+            // 虽然是视频类型，但是只有一帧封面
+            if (stream->disposition & AV_DISPOSITION_ATTACHED_PIC) {
+                continue;
+            }
+
+            AVRational fps_rational = stream->avg_frame_rate;
+            int fps = av_q2d(fps_rational);
+
+            video_channel = new VideoChannel(i, codecContext, time_base, fps);
             video_channel->setRenderCallback(renderCallback);
         }
 
@@ -205,6 +217,7 @@ void NativePlayer::start() {
     // 播放视频
     // 从队列 获取到音/视频包 --> 解开 --> 原始数据包（YUV格式） --> 转成RGBA格式 --> 渲染
     if (video_channel){
+        video_channel->setAudioChannel(audio_channel);
         video_channel->start();
     }
 

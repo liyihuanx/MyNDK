@@ -4,8 +4,9 @@
 
 #include "AudioChannel.h"
 
-AudioChannel::AudioChannel(int stream_index, AVCodecContext *codecContext) : BaseChannel(
-        stream_index, codecContext) {
+AudioChannel::AudioChannel(int stream_index, AVCodecContext *codecContext, AVRational time_base)
+        : BaseChannel(
+        stream_index, codecContext, time_base) {
 
     // 音频三要素
     /*
@@ -13,9 +14,6 @@ AudioChannel::AudioChannel(int stream_index, AVCodecContext *codecContext) : Bas
      * 2.位声/采用格式大小  16bit == 2字节
      * 3.声道数 2  --- 人类就是两个耳朵
      */
-
-
-
 
     // 声道布局频道数
     out_channels = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO); // STEREO:双声道类型 == 获取 声道数 2
@@ -58,7 +56,6 @@ void AudioChannel::stop() {
 //	SLAndroidSimpleBufferQueueItf caller,
 //	void *pContext
 void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *args) {
-    LOGD("回调函数bqPlayerCallback")
     auto *audio_channel = static_cast<AudioChannel *>(args);
     int pcm_size = audio_channel->get_pcm_size();
     // 添加数据到缓冲区里面去
@@ -72,7 +69,7 @@ void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *args) {
 int AudioChannel::get_pcm_size() {
     int pcm_data_size = 0;
     // 原始包
-    AVFrame *frame = 0;
+    AVFrame *frame = nullptr;
     while (isPlaying) {
         int ret = frames.getQueueAndDel(frame);
 
@@ -107,14 +104,14 @@ int AudioChannel::get_pcm_size() {
 
         pcm_data_size = samples_per_channel * out_sample_size * out_channels; // 941通道样本数  *  2样本格式字节数  *  2声道数  =3764
 
-//        releaseAVFrame(&frame);
         break;
     }
 
-//    releaseAVFrame(&frame);
-
     // 采样率 和 样本数的关系？
     // 样本数 = 采样率 * 声道数 * 位声
+
+    audio_time = frame->best_effort_timestamp * av_q2d(time_base); // 必须这样计算后，才能拿到真正的时间搓
+
 
     return pcm_data_size;
 }

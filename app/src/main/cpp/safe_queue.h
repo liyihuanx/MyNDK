@@ -18,11 +18,14 @@ template<typename T> // 泛型：存放任意类型
 class SafeQueue {
 private:
     typedef void (*ReleaseCallback)(T *); // 函数指针 做回调 用来释放T里面的内容的
-    queue <T> queue;
+    typedef void (*SyncCallback)(queue<T> &);
+    queue<T> queue;
     pthread_mutex_t mutex; // 互斥锁 安全
     pthread_cond_t cond; // 等待 和 唤醒
     int work;// 标记队列是否工作
     ReleaseCallback releaseCallback;
+    SyncCallback syncCallback;
+
 public:
     SafeQueue() {
         // 初始化互斥锁
@@ -102,7 +105,7 @@ public:
         for (int i = 0; i < size; ++i) {
             //循环释放队列中的数据
             T value = queue.front();
-            if(releaseCallback){
+            if (releaseCallback) {
                 releaseCallback(&value); // 让外界去释放堆区空间
             }
             queue.pop(); // 删除队列中的数据，让队列为0
@@ -118,6 +121,21 @@ public:
     void setReleaseCallback(ReleaseCallback releaseCallback) {
         this->releaseCallback = releaseCallback;
     }
+
+
+    void setSyncCallback(SyncCallback syncCallback){
+        this->syncCallback = syncCallback;
+    }
+
+    /**
+     * 同步操作 丢包
+     */
+    void sync() {
+        pthread_mutex_lock(&mutex);
+        syncCallback(queue); // 函数指针 具体丢包动作，让外界完成
+        pthread_mutex_unlock(&mutex);
+    }
+
 };
 
 

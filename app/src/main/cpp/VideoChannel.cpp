@@ -4,9 +4,32 @@
 
 #include "VideoChannel.h"
 
-VideoChannel::VideoChannel(int stream_index, AVCodecContext *codecContext) : BaseChannel(
-        stream_index, codecContext) {
+void dropAVFrame(queue<AVFrame *> &q){
+    if (!q.empty()) {
+        AVFrame *frame = q.front();
+        BaseChannel::releaseAVFrame(&frame);
+        q.pop();
+    }
+}
 
+void dropAVPacket(queue<AVPacket *> &q){
+    while (!q.empty()) {
+        AVPacket *pkt = q.front();
+        if (pkt->flags != AV_PKT_FLAG_KEY) { // 非关键帧，可以丢弃
+            BaseChannel::releaseAVPacket(&pkt);
+            q.pop();
+        } else {
+            break; // 如果是关键帧，不能丢，那就结束
+        }
+    }
+}
+
+
+VideoChannel::VideoChannel(int stream_index, AVCodecContext *codecContext, AVRational time_base,
+                           int fps) : BaseChannel(
+        stream_index, codecContext, time_base), fps(fps) {
+    frames.setSyncCallback(dropAVFrame);
+    packets.setSyncCallback(dropAVPacket);
 }
 
 VideoChannel::~VideoChannel() {
@@ -124,6 +147,37 @@ void VideoChannel::video_play() {
                   dst_data,
                   dst_line_size);
 
+        // 音视频同步，在播放每个frames时候，加入间隔fps来延迟
+
+        double extra_delay = frame->repeat_pict / (2 * fps); // 在之前的编码时，加入的额外延时时间取出来（可能获取不到）
+        double fps_delay = 1.0 / fps; // 根据fps得到延时时间（fps25 == 每秒25帧，计算每一帧的延时时间，0.040000）
+        double real_delay = fps_delay + extra_delay; // 当前帧的延时时间  0.040000
+
+        // 获取 音频 和 视频 的时间
+        double video_time = frame->best_effort_timestamp * av_q2d(time_base);
+        double audio_time = audio_channel->audio_time;
+
+        // 判断两个时间差值
+        double time_diff = video_time - audio_time;
+
+        if (time_diff > 0) {
+            // 视频比音频快，直接睡觉，等一会
+            if (time_diff > 1) {
+                // 相差较大
+                av_usleep((real_delay * 2) * 1000000); // 转成微秒
+            } else {
+                av_usleep((real_delay + time_diff) * 1000000);
+            }
+        }
+        if (time_diff < 0) {
+            // 视频比音频慢，要丢包同步
+            if (fabs(time_diff) <= 0.05) {
+                frames.sync();
+                continue;
+            }
+        }
+
+
         // native: ANativeWindows 做渲染工作
         // 上层: SurfaceView 做显示工作
         // 这里拿不到SurfaceView，所以回调出去
@@ -139,6 +193,10 @@ void VideoChannel::video_play() {
 
 void VideoChannel::setRenderCallback(RenderCallback renderCallback) {
     this->renderCallback = renderCallback;
+}
+
+void VideoChannel::setAudioChannel(AudioChannel *audio_channel) {
+    this->audio_channel = audio_channel;
 }
 
 
