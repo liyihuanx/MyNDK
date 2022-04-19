@@ -107,11 +107,27 @@ public class SimplePlayer implements SurfaceHolder.Callback {
 		}
 	}
 
-	public void OnProgress(int progress){
+	public void onProgress(int progress){
 		if (playerListener != null) {
-			playerListener.OnProgress(progress);
+			playerListener.onProgress(progress);
 		}
 	}
+
+	public void onStatusChange(int statusCode) {
+		if (playerListener != null) {
+			String msg = null;
+			switch (statusCode) {
+				case 1:
+					msg = "暂停播放";
+					break;
+				case 2:
+					msg = "继续播放";
+					break;
+			}
+			playerListener.onStatusChange(msg);
+		}
+	}
+
 
 	/**
 	 *

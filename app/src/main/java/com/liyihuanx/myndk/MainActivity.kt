@@ -31,6 +31,8 @@ class MainActivity : AppCompatActivity(), SeekBar.OnSeekBarChangeListener {
     // 获取native层的总时长
     private var duration = 0
 
+    private var isPlaying = true;
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -76,7 +78,7 @@ class MainActivity : AppCompatActivity(), SeekBar.OnSeekBarChangeListener {
             }
 
             @SuppressLint("SetTextI18n")
-            override fun OnProgress(progress: Int) {
+            override fun onProgress(progress: Int) {
                 if (!isTouch) {
                     runOnUiThread {
                         if (duration != 0) {
@@ -89,7 +91,22 @@ class MainActivity : AppCompatActivity(), SeekBar.OnSeekBarChangeListener {
                 }
 
             }
+
+            override fun onStatusChange(msg: String) {
+                Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
+            }
         })
+
+
+        binding.sampleSv.setOnClickListener {
+            if (isPlaying) {
+                isPlaying = false
+                simplePlayer.pause()
+            } else {
+                isPlaying = true
+                simplePlayer.resume()
+            }
+        }
     }
 
     override fun onResume() {

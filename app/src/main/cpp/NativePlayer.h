@@ -53,6 +53,10 @@ public:
     void stop();
     void stop_(NativePlayer *nativePlayer);
 
+    void pause();
+    void resume();
+
+
     void setRenderCallback(RenderCallback renderCallback);
 
     int getDuration();

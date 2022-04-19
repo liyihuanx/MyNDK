@@ -291,6 +291,7 @@ void NativePlayer::seek(int progress) {
    */
 
     int r = av_seek_frame(formatContext, -1, progress * AV_TIME_BASE, AVSEEK_FLAG_FRAME);
+
     if (r < 0) {
         return;
     }
@@ -350,6 +351,27 @@ void NativePlayer::stop_(NativePlayer *nativePlayer) {
     DELETE(audio_channel);
     DELETE(video_channel);
     DELETE(nativePlayer);
+
+}
+
+void NativePlayer::pause() {
+    video_channel->packets.pause();
+    video_channel->frames.pause();
+
+    audio_channel->packets.pause();
+    audio_channel->frames.pause();
+
+    helper->statusCallBack(THREAD_MAIN, 1);
+}
+
+void NativePlayer::resume() {
+    video_channel->packets.resume();
+    video_channel->frames.resume();
+
+    audio_channel->packets.resume();
+    audio_channel->frames.resume();
+
+    helper->statusCallBack(THREAD_MAIN, 2);
 
 }
 

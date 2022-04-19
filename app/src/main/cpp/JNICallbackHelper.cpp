@@ -17,7 +17,8 @@ JNICallbackHelper::JNICallbackHelper(JavaVM *vm, JNIEnv *env, jobject job) {
     jclass clazz = env->GetObjectClass(job);
     jmd_prepared = env->GetMethodID(clazz, "onPrepared", "()V");
     jmd_error = env->GetMethodID(clazz, "onError", "(I)V");
-    jmd_progress = env->GetMethodID(clazz, "OnProgress", "(I)V");
+    jmd_progress = env->GetMethodID(clazz, "onProgress", "(I)V");
+    jmd_status = env->GetMethodID(clazz, "onStatusChange", "(I)V");
 
 }
 
@@ -66,6 +67,19 @@ void JNICallbackHelper::progressCallBack(int thread_mode, int progress) {
         JNIEnv *env_child;
         vm->AttachCurrentThread(&env_child, nullptr);
         env_child->CallVoidMethod(job, jmd_progress, progress);
+        vm->DetachCurrentThread();
+    }
+}
+
+void JNICallbackHelper::statusCallBack(int thread_mode, int msg) {
+    if (thread_mode == THREAD_MAIN) {
+        // 主线程
+        env->CallVoidMethod(job, jmd_status, msg);
+    } else if (thread_mode == THREAD_CHILD) {
+        // 子线程 env也不可以跨线程
+        JNIEnv *env_child;
+        vm->AttachCurrentThread(&env_child, nullptr);
+        env_child->CallVoidMethod(job, jmd_status, msg);
         vm->DetachCurrentThread();
     }
 }

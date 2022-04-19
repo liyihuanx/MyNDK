@@ -72,6 +72,7 @@ int AudioChannel::get_pcm_size() {
     // 原始包
     AVFrame *frame = nullptr;
     while (isPlaying) {
+
         int ret = frames.getQueueAndDel(frame);
 
         if (!isPlaying) {
@@ -136,8 +137,7 @@ void *task_audio_play(void *arg) {
 void AudioChannel::audio_decode() {
     AVPacket *pkt = nullptr;
     while (isPlaying) {
-        if (isPlaying && frames.size() > 50
-        ) {
+        if (isPlaying && frames.size() > 50) {
             av_usleep(10 * 1000);
             continue;
         }

@@ -150,6 +150,7 @@ void VideoChannel::video_play() {
     );
 
     while (isPlaying) {
+
         // 取出一个原始数据包
         int ret = frames.getQueueAndDel(frame);
         if (!isPlaying) {

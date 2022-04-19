@@ -18,6 +18,7 @@ private:
     jmethodID jmd_prepared;
     jmethodID jmd_error;
     jmethodID jmd_progress;
+    jmethodID jmd_status;
 public:
     JNICallbackHelper(JavaVM *vm, JNIEnv *env, jobject job);
 
@@ -26,6 +27,7 @@ public:
     void prepareCallBack(int thread_mode);
     void errorCallBack(int thread_mode, int error_code);
     void progressCallBack(int thread_mode, int progress);
+    void statusCallBack(int thread_mode, int msg);
 
 };
 

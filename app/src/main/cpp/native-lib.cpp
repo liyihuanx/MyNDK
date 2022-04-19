@@ -123,12 +123,16 @@ Java_com_liyihuanx_myndk_SimplePlayer_nativeStop(JNIEnv *env, jobject thiz) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_liyihuanx_myndk_SimplePlayer_nativePause(JNIEnv *env, jobject thiz) {
-
+    if (nativePlayer) {
+        nativePlayer->pause();
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_liyihuanx_myndk_SimplePlayer_nativeResume(JNIEnv *env, jobject thiz) {
-
+    if (nativePlayer) {
+        nativePlayer->resume();
+    }
 }
 
 extern "C"
