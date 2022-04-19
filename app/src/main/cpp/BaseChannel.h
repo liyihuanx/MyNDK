@@ -9,6 +9,7 @@ extern "C" {
 
 #include "safe_queue.h"
 #include "log4c.h" // 日志
+#include "JNICallbackHelper.h"
 
 class BaseChannel {
 
@@ -21,6 +22,12 @@ public:
 
     // 音视频同步的 时间基
     AVRational time_base;
+
+
+    JNICallbackHelper *jniCallbackHelper = 0;
+    void setJNICallbackHelper(JNICallbackHelper *jniCallbackHelper) {
+        this->jniCallbackHelper = jniCallbackHelper;
+    }
 
     BaseChannel(int stream_index, AVCodecContext *codecContext, AVRational time_base)
             :
@@ -44,6 +51,7 @@ public:
     // typedef void (*ReleaseCallback)(T *);
     static void releaseAVPacket(AVPacket ** p) {
         if (p) {
+//            av_packet_unref(*p); // 释放成员指向的堆区
             av_packet_free(p); // 释放队列里面的 T == AVPacket
             *p = 0;
         }
@@ -56,6 +64,7 @@ public:
     // typedef void (*ReleaseCallback)(T *);
     static void releaseAVFrame(AVFrame ** f) {
         if (f) {
+//            av_frame_unref(*f);
             av_frame_free(f); // 释放队列里面的 T == AVFrame
             *f = 0;
         }

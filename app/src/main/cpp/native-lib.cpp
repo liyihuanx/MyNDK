@@ -13,7 +13,7 @@ using namespace std;
 
 NativePlayer *nativePlayer = nullptr;
 JavaVM *vm = nullptr;
-ANativeWindow *window = 0;
+ANativeWindow *window = nullptr;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; // 静态初始化 锁
 
 
@@ -116,7 +116,9 @@ Java_com_liyihuanx_myndk_SimplePlayer_nativeStart(JNIEnv *env, jobject thiz) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_liyihuanx_myndk_SimplePlayer_nativeStop(JNIEnv *env, jobject thiz) {
-
+    if (nativePlayer) {
+        nativePlayer->stop();
+    }
 }
 extern "C"
 JNIEXPORT void JNICALL
@@ -128,6 +130,27 @@ JNIEXPORT void JNICALL
 Java_com_liyihuanx_myndk_SimplePlayer_nativeResume(JNIEnv *env, jobject thiz) {
 
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_liyihuanx_myndk_SimplePlayer_nativeDestroy(JNIEnv *env, jobject thiz) {
+    pthread_mutex_lock(&mutex);
+
+    // 先释放之前的显示窗口
+    if (window) {
+        ANativeWindow_release(window);
+        window = nullptr;
+    }
+
+    pthread_mutex_unlock(&mutex);
+
+    // 释放工作
+    DELETE(nativePlayer);
+    DELETE(vm);
+    DELETE(window);
+}
+
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_liyihuanx_myndk_SimplePlayer_setSurfaceNative(JNIEnv *env, jobject thiz, jobject surface) {
@@ -147,4 +170,19 @@ Java_com_liyihuanx_myndk_SimplePlayer_setSurfaceNative(JNIEnv *env, jobject thiz
 
     pthread_mutex_unlock(&mutex);
 
+}
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_liyihuanx_myndk_SimplePlayer_nativeDuration(JNIEnv *env, jobject thiz) {
+    if (nativePlayer) {
+        return nativePlayer->getDuration();
+    }
+    return 0;
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_liyihuanx_myndk_SimplePlayer_nativeSeek(JNIEnv *env, jobject thiz, jint progress) {
+    if (nativePlayer) {
+        nativePlayer->seek(progress);
+    }
 }

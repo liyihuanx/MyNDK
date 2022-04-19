@@ -16,7 +16,8 @@ AudioChannel::AudioChannel(int stream_index, AVCodecContext *codecContext, AVRat
      */
 
     // 声道布局频道数
-    out_channels = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO); // STEREO:双声道类型 == 获取 声道数 2
+    out_channels = av_get_channel_layout_nb_channels(
+            AV_CH_LAYOUT_STEREO); // STEREO:双声道类型 == 获取 声道数 2
     // 返回每个样本的字节数
     out_sample_size = av_get_bytes_per_sample(AV_SAMPLE_FMT_S16); // 每个sample是16 bit == 2字节
 
@@ -102,16 +103,19 @@ int AudioChannel::get_pcm_size() {
                 frame->nb_samples // 此帧描述的音频样本数（每个通道
         );
 
-        pcm_data_size = samples_per_channel * out_sample_size * out_channels; // 941通道样本数  *  2样本格式字节数  *  2声道数  =3764
+        pcm_data_size = samples_per_channel * out_sample_size *
+                        out_channels; // 941通道样本数  *  2样本格式字节数  *  2声道数  =3764
+        audio_time = frame->best_effort_timestamp * av_q2d(time_base); // 必须这样计算后，才能拿到真正的时间搓
+
+        jniCallbackHelper->progressCallBack(THREAD_CHILD, audio_time);
 
         break;
     }
 
     // 采样率 和 样本数的关系？
     // 样本数 = 采样率 * 声道数 * 位声
-
-    audio_time = frame->best_effort_timestamp * av_q2d(time_base); // 必须这样计算后，才能拿到真正的时间搓
-
+    av_frame_unref(frame);
+    releaseAVFrame(&frame); // 释放AVFrame * 本身的堆区空间
 
     return pcm_data_size;
 }
@@ -132,6 +136,12 @@ void *task_audio_play(void *arg) {
 void AudioChannel::audio_decode() {
     AVPacket *pkt = nullptr;
     while (isPlaying) {
+        if (isPlaying && frames.size() > 50
+        ) {
+            av_usleep(10 * 1000);
+            continue;
+        }
+
         int ret = packets.getQueueAndDel(pkt); // 阻塞式函数
         if (!isPlaying) {
             break; // 如果关闭了播放，跳出循环，releaseAVPacket(&pkt);
@@ -144,9 +154,6 @@ void AudioChannel::audio_decode() {
         // 最新的FFmpeg，和旧版本差别很大， 新版本：1.发送pkt（压缩包）给缓冲区，  2.从缓冲区拿出来（原始包）
         ret = avcodec_send_packet(codecContext, pkt);
 
-        // FFmpeg源码缓存一份pkt，大胆释放即可
-        releaseAVPacket(&pkt);
-
         if (ret) {
             break; // avcodec_send_packet 出现了错误，结束循环
         }
@@ -158,11 +165,19 @@ void AudioChannel::audio_decode() {
         if (ret == AVERROR(EAGAIN)) {
             continue; // 有可能音频帧，也会获取失败，重新拿一次
         } else if (ret != 0) {
+            if (frame) {
+                av_frame_unref(frame);
+                releaseAVFrame(&frame);
+            }
             break; // 错误了
         }
         // 重要拿到了 原始包-- PCM数据
         frames.insertToQueue(frame);
+
+        av_packet_unref(pkt);
+        releaseAVPacket(&pkt);
     } // while end
+    av_packet_unref(pkt);
     releaseAVPacket(&pkt);
 
 }
@@ -273,7 +288,8 @@ void AudioChannel::audio_play() {
 
     // TODO 4.设置回调函数
     // 获取播放器队列接口
-    result = (*bqPlayerObject)->GetInterface(bqPlayerObject, SL_IID_BUFFERQUEUE, &bqPlayerBufferQueue);
+    result = (*bqPlayerObject)->GetInterface(bqPlayerObject, SL_IID_BUFFERQUEUE,
+                                             &bqPlayerBufferQueue);
     if (result != SL_RESULT_SUCCESS) {
         LOGD("获取播放队列 GetInterface SL_IID_BUFFERQUEUE failed!");
         return;

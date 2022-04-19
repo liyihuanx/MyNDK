@@ -22,3 +22,7 @@
 
 
 #endif //NE_PLAYER_MACRO_H
+
+
+// 宏函数
+#define DELETE(object) if (object) { delete object; object = 0;}

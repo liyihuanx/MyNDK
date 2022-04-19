@@ -13,6 +13,8 @@ NativePlayer::NativePlayer(const char *data_source, JNICallbackHelper *pHelper) 
     // 把源 Copy给成员
     strcpy(this->data_source, data_source);
     this->helper = pHelper;
+
+    pthread_mutex_init(&seek_mutex, nullptr);
 }
 
 /**
@@ -21,12 +23,15 @@ NativePlayer::NativePlayer(const char *data_source, JNICallbackHelper *pHelper) 
 NativePlayer::~NativePlayer() {
     if (data_source) {
         delete data_source;
+        data_source = nullptr;
     }
 
     if (helper) {
         delete helper;
+        helper = nullptr;
     }
 
+    pthread_mutex_destroy(&seek_mutex);
 }
 
 // 子线程的函数指针(prepare的)
@@ -34,7 +39,7 @@ void *task_prepare(void *args) {
     // 传递了this进来，所以args就是NativePlayer
     // 为什么传递进来？ 因为该方法拿不到this，和NativePlayer是没联系的
     // 用友元也ok
-    NativePlayer *player = static_cast<NativePlayer *>(args);
+    auto *player = static_cast<NativePlayer *>(args);
 
     player->prepare_();
 
@@ -85,6 +90,8 @@ void NativePlayer::prepare_() {
         }
         return;
     }
+
+    this->duration = formatContext->duration / AV_TIME_BASE;
 
     // TODO 第三步：遍历每个流，根据流的信息做对应操作
     for (int i = 0; i < formatContext->nb_streams; ++i) {
@@ -138,6 +145,11 @@ void NativePlayer::prepare_() {
         // TODO 第十步：从编解码器参数中，获取流的类型 codec_type  ===  音频/视频
         if (parameters->codec_type == AVMediaType::AVMEDIA_TYPE_AUDIO) { // 音频
             audio_channel = new AudioChannel(i, codecContext, time_base);
+
+            if (this->duration != 0) {
+                audio_channel->setJNICallbackHelper(helper);
+            }
+
         } else if (parameters->codec_type == AVMediaType::AVMEDIA_TYPE_VIDEO) { // 视频
 
             // 虽然是视频类型，但是只有一帧封面
@@ -178,12 +190,24 @@ void *task_start(void *args) {
     return nullptr;
 }
 
-
+// 可优化点一: 压缩数据不断alloc，而消耗太慢，导致队爆满，堆空间一直增大
 void NativePlayer::start_() {
     // 压缩数据存放到queue
     while (isPlaying) {
-        // 开辟一个空间
+        // 有一百个数据没被使用，就休眠
+        if (video_channel && video_channel->packets.size() > 50) {
+            av_usleep(10 * 1000); // 10ms
+            continue;
+        }
+
+        if (audio_channel && audio_channel->packets.size() > 50) {
+            av_usleep(10 * 1000); // 10ms
+            continue;
+        }
+
+        // 开辟一个空间（这里为什么不释放？，因为下面传给了队列，释放了空间，那队列中的不也没了）
         AVPacket *packet = av_packet_alloc();
+
         // 读取一个 音/视频 压缩数据包
         int ret = av_read_frame(formatContext, packet);
         // 0 if OK, < 0 on error or end of file
@@ -194,13 +218,16 @@ void NativePlayer::start_() {
                 video_channel->packets.insertToQueue(packet);
             } else if (audio_channel && audio_channel->stream_index == packet->stream_index) {
                 // 代表是音频
-                 audio_channel->packets.insertToQueue(packet);
+                audio_channel->packets.insertToQueue(packet);
             }
         } else if (ret == AVERROR_EOF) {
-            // 读到文件末尾
+            // 读到文件末尾,等队列为空再退出
+            if (video_channel->packets.empty() && audio_channel->packets.empty()) {
+                break; // 队列的数据被音频 视频 全部播放完毕了，我在退出
+            }
+
         } else {
             // error
-
             break;
         }
     } // while end
@@ -216,7 +243,7 @@ void NativePlayer::start() {
 
     // 播放视频
     // 从队列 获取到音/视频包 --> 解开 --> 原始数据包（YUV格式） --> 转成RGBA格式 --> 渲染
-    if (video_channel){
+    if (video_channel) {
         video_channel->setAudioChannel(audio_channel);
         video_channel->start();
     }
@@ -233,6 +260,98 @@ void NativePlayer::setRenderCallback(RenderCallback renderCallback) {
     this->renderCallback = renderCallback;
 }
 
+int NativePlayer::getDuration() {
+    return duration;
+}
+
+void NativePlayer::seek(int progress) {
+
+    // 健壮性判断
+    if (progress < 0 || progress > duration) {
+
+        return;
+    }
+    if (!audio_channel && !video_channel) {
+
+        return;
+    }
+    if (!formatContext) {
+
+        return;
+    }
+
+    pthread_mutex_lock(&seek_mutex);
+
+    /**
+   * 1.formatContext 安全问题
+   * 2.-1 代表默认情况，FFmpeg自动选择 音频 还是 视频 做 seek，  模糊：0视频  1音频
+   * 3. AVSEEK_FLAG_ANY（老实） 直接精准到 拖动的位置，问题：如果不是关键帧，B帧 可能会造成 花屏情况
+   *    AVSEEK_FLAG_BACKWARD（则优  8的位置 B帧 ， 找附件的关键帧 6，如果找不到他也会花屏）
+   *    AVSEEK_FLAG_FRAME 找关键帧（非常不准确，可能会跳的太多），一般不会直接用，但是会配合用
+   */
+
+    int r = av_seek_frame(formatContext, -1, progress * AV_TIME_BASE, AVSEEK_FLAG_FRAME);
+    if (r < 0) {
+        return;
+    }
+
+    if (audio_channel) {
+        audio_channel->packets.setWork(0);  // 队列不工作
+        audio_channel->frames.setWork(0);  // 队列不工作
+        audio_channel->packets.clear();
+        audio_channel->frames.clear();
+        audio_channel->packets.setWork(1); // 队列继续工作
+        audio_channel->frames.setWork(1);  // 队列继续工作
+    }
+
+    if (video_channel) {
+        video_channel->packets.setWork(0);  // 队列不工作
+        video_channel->frames.setWork(0);  // 队列不工作
+        video_channel->packets.clear();
+        video_channel->frames.clear();
+        video_channel->packets.setWork(1); // 队列继续工作
+        video_channel->frames.setWork(1);  // 队列继续工作
+    }
+    pthread_mutex_unlock(&seek_mutex);
+
+}
+
+void *task_stop(void *args) {
+    auto *player = static_cast<NativePlayer *>(args);
+    player->stop_(player);
+    return nullptr;
+}
+
+void NativePlayer::stop() {
+    // 置空，不准回调给上层
+    helper = nullptr;
+    if (audio_channel) {
+        audio_channel->jniCallbackHelper = nullptr;
+    }
+    if (video_channel) {
+        video_channel->jniCallbackHelper = nullptr;
+    }
+
+    // 分离线程，非分离线程的用法
+    pthread_create(&pid_stop, nullptr, task_stop, this);
+}
+
+void NativePlayer::stop_(NativePlayer *nativePlayer) {
+    isPlaying = false;
+    // 这两个线程暂停下来之后，stop线程才会结束
+    pthread_join(pid_prepare, nullptr);
+    pthread_join(pid_start, nullptr);
+
+    if (formatContext) {
+        avformat_close_input(&formatContext);
+        avformat_free_context(formatContext);
+        formatContext = nullptr;
+    }
+    DELETE(audio_channel);
+    DELETE(video_channel);
+    DELETE(nativePlayer);
+
+}
 
 
 

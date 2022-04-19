@@ -7,6 +7,7 @@
 void dropAVFrame(queue<AVFrame *> &q){
     if (!q.empty()) {
         AVFrame *frame = q.front();
+        av_frame_unref(frame);
         BaseChannel::releaseAVFrame(&frame);
         q.pop();
     }
@@ -16,6 +17,7 @@ void dropAVPacket(queue<AVPacket *> &q){
     while (!q.empty()) {
         AVPacket *pkt = q.front();
         if (pkt->flags != AV_PKT_FLAG_KEY) { // 非关键帧，可以丢弃
+            av_packet_unref(pkt);
             BaseChannel::releaseAVPacket(&pkt);
             q.pop();
         } else {
@@ -66,8 +68,14 @@ void VideoChannel::start() {
 }
 
 void VideoChannel::video_decode() {
-    AVPacket *pkt = 0;
+    AVPacket *pkt = nullptr;
     while (isPlaying) {
+
+        if (isPlaying && frames.size() > 50) {
+            av_usleep(10 * 1000); //  10毫秒
+            continue;
+        }
+
         // 从压缩数据包取出一个
         int ret = packets.getQueueAndDel(pkt);
         // 取出来后，发现没播放了
@@ -80,10 +88,10 @@ void VideoChannel::video_decode() {
             continue;
         }
 
-        // 发送给缓冲区，再从缓冲区拿
+        // 发送给缓冲区，源码Copy一份，后续再从缓冲区拿
         ret = avcodec_send_packet(codecContext, pkt);
         // 已经在缓冲区存在一份了，可以释放掉
-        releaseAVPacket(&pkt);
+//        releaseAVPacket(&pkt); --> 这种释放方式只释放了pkt指向的堆空间，而pkt里的指针指向的地址没被释放
 
         if (ret) {
             break;
@@ -98,13 +106,23 @@ void VideoChannel::video_decode() {
             // B帧  B帧参考前面成功  B帧参考后面失败   可能是P帧没有出来，再拿一次就行了
             continue;
         } else if (ret != 0) {
+            if (frame) {
+                av_frame_unref(frame);
+                releaseAVFrame(&frame);
+            }
             break; // 错误了
         }
         // 数据原始包插入队列
         frames.insertToQueue(frame);
+
+        // packet已经被使用完了，做释放
+        av_packet_unref(pkt);
+        releaseAVPacket(&pkt); // 释放AVPacket * 本身的堆区空间
+
     } // while end
 
     // 在break后
+    av_packet_unref(pkt);
     releaseAVPacket(&pkt);
 }
 
@@ -182,10 +200,12 @@ void VideoChannel::video_play() {
         // 上层: SurfaceView 做显示工作
         // 这里拿不到SurfaceView，所以回调出去
         renderCallback(dst_data[0], codecContext->width, codecContext->height, dst_line_size[0]);
+        av_frame_unref(frame);
         releaseAVFrame(&frame);
     }
-
+    av_frame_unref(frame);
     releaseAVFrame(&frame); // 出现错误，所退出的循环，都要释放frame
+
     isPlaying = false;
     av_free(&dst_data[0]);
     sws_freeContext(sws_context); // free(sws_ctx);

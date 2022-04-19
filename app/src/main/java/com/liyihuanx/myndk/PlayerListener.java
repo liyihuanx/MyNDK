@@ -11,4 +11,5 @@ public interface PlayerListener {
 
 	void onError(String msg);
 
+	void OnProgress(int progress);
 }

@@ -34,6 +34,12 @@ private:
     // nativePlayer 使用的
     bool isPlaying = false;
     RenderCallback renderCallback;
+
+    int duration;
+
+    pthread_mutex_t seek_mutex;
+    pthread_t pid_stop;
+
 public:
     NativePlayer(const char *data_source, JNICallbackHelper *pHelper);
     ~NativePlayer();
@@ -44,7 +50,15 @@ public:
     void start();
     void start_();
 
+    void stop();
+    void stop_(NativePlayer *nativePlayer);
+
     void setRenderCallback(RenderCallback renderCallback);
+
+    int getDuration();
+
+    void seek(int progress);
+
 };
 
 

@@ -50,6 +50,22 @@ public class SimplePlayer implements SurfaceHolder.Callback {
 	}
 
 
+	public void destroy(){
+		nativeDestroy();
+	}
+
+
+
+
+	public int getDuration() {
+		return nativeDuration();
+	}
+
+	public void seek(int progress){
+		nativeSeek(progress);
+	}
+
+
 	/**
 	 * 给jni反射调用的
 	 * native层准备完成，调用此方法
@@ -91,6 +107,11 @@ public class SimplePlayer implements SurfaceHolder.Callback {
 		}
 	}
 
+	public void OnProgress(int progress){
+		if (playerListener != null) {
+			playerListener.OnProgress(progress);
+		}
+	}
 
 	/**
 	 *
@@ -132,12 +153,13 @@ public class SimplePlayer implements SurfaceHolder.Callback {
 	/**
 	 * native层方法
 	 */
-	public native void nativePrepare(String dataSource);
-	public native void nativeStart();
-	public native void nativeStop();
-	public native void nativePause();
-	public native void nativeResume();
+	private native void nativePrepare(String dataSource);
+	private native void nativeStart();
+	private native void nativeStop();
+	private native void nativePause();
+	private native void nativeResume();
+	private native void nativeDestroy();
 	private native void setSurfaceNative(Surface surface);
-
-
+	private native int nativeDuration();
+	private native void nativeSeek(int progress);
 }
